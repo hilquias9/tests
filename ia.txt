@@ -1,0 +1,37 @@
+como a verificacao de token vai ser feita com o bearer e credentials?
+A verificação ocorre em duas etapas: no login, o cliente envia as credentials (como usuário e senha). O servidor valida e retorna um Bearer Token (geralmente um JWT). Nas requisições seguintes, o cliente envia esse token no cabeçalho HTTP para validação.O processo padrão de verificação nas requisições funciona da seguinte maneira:
+1. Envio do Token pelo ClienteA cada requisição para uma rota protegida, a aplicação cliente envia o token no cabeçalho da requisição (geralmente usando a notação OAuth 2.0 padrão):Authorization: Bearer <seu-token-jwt>
+2. Etapas de Verificação pelo ServidorQuando o servidor recebe a requisição, um middleware intercepta o tráfego e executa a seguinte rotina:Extração: O servidor isola a string do token após a palavra "Bearer".Validação da Assinatura: O servidor usa uma chave secreta ou chave pública (geralmente via JSON Web Key Sets - JWKS) para descriptografar e verificar a integridade da assinatura do token.Verificação de Expiração: O servidor checa o payload do token para garantir que o mesmo ainda se encontra dentro do tempo de validade (campo exp).Controle de Acesso: São checadas as permissões contidas no payload do token (como roles ou scopes) para confirmar se o usuário tem autorização para acessar o recurso solicitado.Se todas as etapas forem bem-sucedidas, o servidor libera o acesso (HTTP 200). Caso contrário, a requisição é negada com um erro de Unauthorized (HTTP 401) ou Forbidden (HTTP 403).Para que eu possa ser mais específico na explicação, me conte:Qual é a linguagem de programação ou framework que você está usando no backend?Você pretende implementar a autenticação do zero ou utilizando algum provedor externo?13 sitesWhat is a Bearer Token? Understanding API AuthenticationQuick answer. Bearer tokens authenticate API requests by granting access to whoever possesses the token, passed in the Authorizati...Postman BlogAutenticação e autorização com JWT e Bearer - Balta.ioAté o momento temos uma API que consegue gerar Tokens e verificar se um Token válido foi recebido no cabeçalho, bem como ler infor...Balta.ioO que é um token Bearer? Entendendo a autenticação de APITraduzido — Os tokens Bearer autenticam solicitações de API concedendo acesso a quem possuir o token, passado no cabeçalho Authorization como ...Postman BlogMostrar tudoDisse: fastapi HTTPBearer e HTTPAuthorizationCredentials, funciona para login?Não, as classes HTTPBearer e HTTPAuthorizationCredentials do FastAPI não servem para a rota de login, mas sim para proteger as rotas após o login.Aqui está o motivo e a forma correta de usar cada uma:Por que não funcionam para login?HTTPBearer: É um extrator. Ele serve apenas para ler o cabeçalho Authorization: Bearer <TOKEN> de uma requisição que já deveria conter um token. No login, o usuário ainda não possui um token.HTTPAuthorizationCredentials: É apenas o tipo de objeto que o HTTPBearer retorna, contendo o esquema (Bearer) e a string do token (credentials).O fluxo correto no FastAPIPara resolver isso, você deve dividir a sua autenticação em duas partes:1. Rota de Login (Recebe credenciais, gera o Token)Para a rota de login, você deve usar OAuth2PasswordRequestForm. Ele extrai o username e password enviados pelo usuário.
+
+
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+
+app = FastAPI()
+
+@app.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    # 1. Valide o form_data.username e form_data.password no banco
+    if form_data.username != "user" or form_data.password != "pass":
+        raise HTTPException(status_code=400, detail="Incorreto")
+    
+    # 2. Gere o seu JWT aqui
+    token_gerado = "seu_jwt_token_aqui"
+    
+    # 3. Retorne o token para o cliente
+    return {"access_token": token_gerado, "token_type": "bearer"}
+Use o código com cuidado.2. Rotas Protegidas (Valida o Token usando HTTPBearer)Agora sim, para as rotas que exigem autenticação, você usa o HTTPBearer para capturar e validar o token que você gerou no passo anterior.pythonfrom fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
+
+@app.get("/perfil")
+async def ver_perfil(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    # O FastAPI extrai automaticamente o token do cabeçalho
+    token = credentials.credentials
+    
+    # Valide o JWT (ex: checar expiração e assinatura)
+    # se for inválido, dispare um HTTPException(401)
+    
+    return {"mensagem": "Acesso autorizado", "token_usado": token}
+Use o código com cuidado.Qual biblioteca você pretende usar para gerar e decodificar o token JWT (como PyJWT ou python-jose)?
