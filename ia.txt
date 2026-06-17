@@ -21,7 +21,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     
     # 3. Retorne o token para o cliente
     return {"access_token": token_gerado, "token_type": "bearer"}
-Use o código com cuidado.2. Rotas Protegidas (Valida o Token usando HTTPBearer)Agora sim, para as rotas que exigem autenticação, você usa o HTTPBearer para capturar e validar o token que você gerou no passo anterior.pythonfrom fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+2. Rotas Protegidas (Valida o Token usando HTTPBearer)Agora sim, para as rotas que exigem autenticação, você usa o HTTPBearer para capturar e validar o token que você gerou no passo anterior
 
 security = HTTPBearer()
 
@@ -34,4 +34,3 @@ async def ver_perfil(credentials: HTTPAuthorizationCredentials = Depends(securit
     # se for inválido, dispare um HTTPException(401)
     
     return {"mensagem": "Acesso autorizado", "token_usado": token}
-Use o código com cuidado.Qual biblioteca você pretende usar para gerar e decodificar o token JWT (como PyJWT ou python-jose)?
